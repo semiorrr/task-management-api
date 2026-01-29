@@ -9,18 +9,13 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     
-    public function index(): JsonResponse
+    public function index()
     {
-        $users = User::all();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $users,
-        ]);
+        return User::all();
     }
 
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -32,23 +27,16 @@ class UserController extends Controller
         
         $user = User::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User created successfully',
-            'data' => $user,
-        ], 201);
+        return response()->json($user, 201);
     }
 
-    public function show(User $user): JsonResponse
+    public function show(User $user)
     {
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-        ]);
+        return $user;
     }
 
   
-    public function update(Request $request, User $user): JsonResponse
+    public function update(Request $request, User $user)
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -62,20 +50,13 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User updated successfully',
-            'data' => $user,
-        ]);
+        return $user;
     }
 
-    public function destroy(User $user): JsonResponse
+    public function destroy(User $user)
     {
         $user->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User deleted successfully',
-        ]);
+        return response()->noContent();
     }
 }
