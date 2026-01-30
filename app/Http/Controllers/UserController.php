@@ -23,6 +23,10 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        if (User::where('name', $validated['name'])->exists()) {
+            return response()->json(['message' => 'Name already exist'], 400);
+        }
+
         $validated['password'] = bcrypt($validated['password']);
         
         $user = User::create($validated);
@@ -44,6 +48,12 @@ class UserController extends Controller
             'password' => 'sometimes|string|min:8|confirmed',
         ]);
 
+        if (isset($validated['name']) && User::where('name', $validated['name'])
+            ->where('id', '!=', $user->id)
+            ->exists()) {
+            return response()->json(['message' => 'Name already exist'], 400);
+        }
+
         if (isset($validated['password'])) {
             $validated['password'] = bcrypt($validated['password']);
         }
@@ -57,6 +67,6 @@ class UserController extends Controller
     {
         $user->delete();
 
-        return response()->noContent();
+        return response()->json(['message' => 'User deleted successfully'], 200);
     }
 }
