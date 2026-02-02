@@ -8,12 +8,20 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Task::all();
+        $includes = array_filter(explode(',', $request->query('include', '')));
+
+        $query = Task::query();
+
+        if (in_array('user', $includes)) {
+            $query->with('user');
+        }
+
+        return $query->get();
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $task = Task::find($id);
 
@@ -21,7 +29,28 @@ class TaskController extends Controller
             return response()->json(['message' => 'Tasks not found. '], 404);
         }
 
+        $includes = array_filter(explode(',', $request->query('include', '')));
+
+        if (in_array('user', $includes)) {
+            $task->load('user');
+        }
+
         return $task;
+    }
+
+    public function userByTask($id)
+    {
+        $task = Task::find($id);
+
+        if (! $task) {
+            return response()->json(['message' => 'Tasks not found. '], 404);
+        }
+
+        if (! $task->user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        return $task->user;
     }
 
     public function store(Request $request)

@@ -9,9 +9,17 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     
-    public function index()
+    public function index(Request $request)
     {
-        return User::all();
+        $includes = array_filter(explode(',', $request->query('include', '')));
+
+        $query = User::query();
+
+        if (in_array('tasks', $includes)) {
+            $query->with('tasks');
+        }
+
+        return $query->get();
     }
 
 
@@ -34,9 +42,26 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
+        $includes = array_filter(explode(',', $request->query('include', '')));
+
+        if (in_array('tasks', $includes)) {
+            $user->load('tasks');
+        }
+
         return $user;
+    }
+
+    public function tasksByUser($id)
+    {
+        $user = User::find($id);
+
+        if (! $user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        return $user->tasks;
     }
 
   
