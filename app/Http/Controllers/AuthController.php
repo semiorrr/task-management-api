@@ -37,4 +37,28 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logged out'], 200);
     }
-}
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (User::where('name', $validated['name'])->exists()) {
+            return response()->json(['message' => 'Name already exist'], 400);
+        }
+
+        $validated['password'] = bcrypt($validated['password']);
+
+        $user = User::create($validated);
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user,
+        ], 201);
+    }
+} 
