@@ -39,26 +39,24 @@ class AuthController extends Controller
     }
 
     public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
 
-        if (User::where('name', $validated['name'])->exists()) {
-            return response()->json(['message' => 'Name already exist'], 400);
-        }
-
-        $validated['password'] = bcrypt($validated['password']);
-
-        $user = User::create($validated);
-
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user,
-        ], 201);
+    if (User::where('name', $validated['name'])->exists()) {
+        return response()->json(['message' => 'Name already exist'], 400);
     }
-} 
+
+    $validated['password'] = bcrypt($validated['password']);
+
+    $user = User::create($validated);
+
+    return response()->json([
+        'message' => 'User registered successfully',
+        'user' => $user,
+    ], 201);
+}
+}
