@@ -14,6 +14,7 @@ class Task extends Model
         'description',
         'completed',
         'user_id',
+        'team_id',
     ];
 
     protected $casts = [
@@ -23,5 +24,10 @@ class Task extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 }
