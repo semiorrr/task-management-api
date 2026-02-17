@@ -14,7 +14,6 @@ class NormalUsersCannotManageMembers
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Normal users cannot manage members
         if ($user->role === 'user') {
             return response()->json(['message' => 'Unauthorized - normal users cannot manage members'], 403);
         }

@@ -15,16 +15,13 @@ class TeamLeaderOwnTeam
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Resolve team from route (could be model or id)
         $routeTeam = $request->route('team');
         $team = $routeTeam instanceof Team ? $routeTeam : Team::find($routeTeam);
 
-        // Admins can modify any team
         if ($user->role === 'admin') {
             return $next($request);
         }
 
-        // Team leaders can only modify their own team
         if ($user->role === 'team_leader' && $team && $user->id === $team->leader_id) {
             return $next($request);
         }

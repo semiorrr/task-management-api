@@ -15,7 +15,6 @@ class ManageTeamMembers
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Resolve team from route (could be model or id)
         $routeTeam = $request->route('team');
         $team = $routeTeam instanceof Team ? $routeTeam : Team::find($routeTeam);
 
