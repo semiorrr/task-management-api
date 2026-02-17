@@ -22,10 +22,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Teams endpoints with authorization
     Route::get('teams', [TeamController::class, 'index']);
-    Route::post('teams', [TeamController::class, 'store']);
+    Route::post('teams', [TeamController::class, 'store'])->middleware(App\Http\Middleware\AdminOnly::class);
     Route::get('teams/{team}', [TeamController::class, 'show']);
-    Route::patch('teams/{team}', [TeamController::class, 'update']);
-    Route::delete('teams/{team}', [TeamController::class, 'destroy']);
+    Route::patch('teams/{team}', [TeamController::class, 'update'])->middleware(App\Http\Middleware\TeamLeaderOwnTeam::class);
+    Route::delete('teams/{team}', [TeamController::class, 'destroy'])->middleware(App\Http\Middleware\TeamLeaderOwnTeam::class);
+
+    // Team members management
+    Route::post('teams/{team}/members', [TeamController::class, 'addMember'])
+        ->middleware([
+            App\Http\Middleware\NormalUsersCannotManageMembers::class,
+            App\Http\Middleware\ManageTeamMembers::class,
+        ]);
+    Route::delete('teams/{team}/members/{user}', [TeamController::class, 'removeMember'])
+        ->middleware([
+            App\Http\Middleware\NormalUsersCannotManageMembers::class,
+            App\Http\Middleware\ManageTeamMembers::class,
+        ]);
 
     // Tasks endpoints with authorization
     Route::get('tasks', [TaskController::class, 'index']);

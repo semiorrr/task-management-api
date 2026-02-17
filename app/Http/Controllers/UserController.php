@@ -26,6 +26,10 @@ class UserController extends Controller
             $query->with('tasks');
         }
 
+        if (in_array('team', $includes)) {
+            $query->with('team');
+        }
+
         return response()->json($query->get());
     }
 
@@ -45,22 +49,21 @@ class UserController extends Controller
 
         $validated['password'] = bcrypt($validated['password']);
         
-        // Get authenticated user
         $authUser = auth('sanctum')->user();
         
         if ($authUser) {
-            // Only admin and team_leader can create users
+            //admin and team_leader can create users
             if ($authUser->role === 'team_leader') {
                 $validated['role'] = 'user';
                 $validated['team_id'] = $authUser->team_id;
             } elseif ($authUser->role === 'admin') {
-                // Admin can set any role, or default to user
+                //admin can set any role
                 $validated['role'] = $validated['role'] ?? 'user';
             } else {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         } else {
-            // Unauthenticated users create with default 'user' role
+            //Unauthenticated users create with default 'user' role
             $validated['role'] = 'user';
         }
         
@@ -80,6 +83,10 @@ class UserController extends Controller
 
         if (in_array('tasks', $includes)) {
             $user->load('tasks');
+        }
+
+        if (in_array('team', $includes)) {
+            $user->load('team');
         }
 
         return response()->json($user);
@@ -117,9 +124,6 @@ class UserController extends Controller
 
         // Remove null values to avoid overwriting with nulls
         $validated = array_filter($validated, fn($value) => $value !== null);
-
-        // Debug: Log what we're updating
-        \Log::info('Update attempt', ['user_id' => $user->id, 'validated' => $validated, 'auth_role' => $authUser->role]);
 
         // Only admin can change role or team_id
         if (isset($validated['role']) && $authUser->role !== 'admin') {
