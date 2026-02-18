@@ -17,8 +17,9 @@ class UserController extends Controller
         $query = User::query();
 
         if ($user->role === 'team_leader') {
-                $query->where('team_id', $user->team_id)->orWhere('id', $user->id);
-        } else {
+            $query->where('team_id', $user->team_id)->orWhere('id', $user->id);
+        } elseif ($user->role === 'user') {
+            
             $query->where('id', $user->id);
         }
 
