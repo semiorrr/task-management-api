@@ -110,4 +110,149 @@ class TeamController extends Controller
 
         return response()->json(['message' => 'Team deleted successfully']);
     }
+
+    public function uploadProfilePic(Request $request, Team $team)
+    {
+        $authUser = auth()->user();
+        if ($authUser->role !== 'admin' && $authUser->role !== 'team_leader') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'profile_pic' => 'required|image|max:4096',
+        ]);
+
+        $path = $request->file('profile_pic')->store('profile_pics/teams', 'public');
+
+        $team->profile_pic = $path;
+        $team->save();
+
+        return response()->json(['profile_pic_url' => $team->profile_pic_url], 200);
+    }
+
+    public function previewProfilePic(Team $team)
+    {
+        if (!$team->profile_pic) {
+            return response()->json(['message' => 'No profile picture'], 404);
+        }
+
+        return redirect($team->profile_pic_url);
+    }
+
+    public function export(Request $request)
+    {
+        $authUser = auth()->user();
+        if ($authUser->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $teams = Team::with('members', 'leader')->get();
+
+        $filename = 'teams_export_' . date('Ymd_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $columns = ['name', 'description', 'leader_email', 'members_emails', 'profile_pic_url'];
+
+        $callback = function () use ($teams, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($teams as $team) {
+                $members = $team->members->pluck('email')->toArray();
+                $leaderEmail = $team->leader ? $team->leader->email : '';
+                $row = [
+                    $team->name,
+                    $team->description,
+                    $leaderEmail,
+                    implode(';', $members),
+                    $team->profile_pic_url ?? '',
+                ];
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $authUser = auth()->user();
+        if ($authUser->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        $path = $request->file('file')->getRealPath();
+
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return response()->json(['message' => 'Unable to open file'], 400);
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            return response()->json(['message' => 'Empty file'], 400);
+        }
+
+        $created = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $data = array_combine($header, $row);
+            if (!$data) {
+                continue;
+            }
+
+            $team = Team::firstOrCreate([
+                'name' => $data['name'],
+            ], [
+                'description' => $data['description'] ?? null,
+            ]);
+
+            // leader
+            if (!empty($data['leader_email'])) {
+                $leader = \App\Models\User::firstOrCreate([
+                    'email' => $data['leader_email'],
+                ], [
+                    'name' => $data['leader_email'],
+                    'password' => bcrypt(str()->random(12)),
+                    'role' => 'team_leader',
+                ]);
+                $team->leader_id = $leader->id;
+                $team->save();
+            }
+
+            // members
+            if (!empty($data['members_emails'])) {
+                $members = explode(';', $data['members_emails']);
+                foreach ($members as $email) {
+                    $email = trim($email);
+                    if (!$email) continue;
+                    $user = \App\Models\User::firstOrCreate([
+                        'email' => $email,
+                    ], [
+                        'name' => $email,
+                        'password' => bcrypt(str()->random(12)),
+                        'role' => 'user',
+                    ]);
+                    $user->team_id = $team->id;
+                    $user->save();
+                }
+            }
+
+            $created[] = $team->id;
+        }
+
+        fclose($handle);
+
+        return response()->json(['created_team_ids' => $created], 201);
+    }
 }

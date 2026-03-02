@@ -150,6 +150,37 @@ class UserController extends Controller
         return response()->json($user);
     }
 
+    public function uploadProfilePic(Request $request, User $user)
+    {
+        $authUser = auth()->user();
+        if ($authUser->role === 'team_leader' && $authUser->team_id !== $user->team_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        if ($authUser->role === 'user' && $authUser->id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'profile_pic' => 'required|image|max:2048',
+        ]);
+
+        $path = $request->file('profile_pic')->store('profile_pics/users', 'public');
+
+        $user->profile_pic = $path;
+        $user->save();
+
+        return response()->json(['profile_pic_url' => $user->profile_pic_url], 200);
+    }
+
+    public function previewProfilePic(User $user)
+    {
+        if (!$user->profile_pic) {
+            return response()->json(['message' => 'No profile picture'], 404);
+        }
+
+        return redirect($user->profile_pic_url);
+    }
+
     public function destroy(User $user)
     {
         $authUser = auth()->user();

@@ -27,6 +27,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('teams/{team}', [TeamController::class, 'update'])->middleware(App\Http\Middleware\TeamLeaderOwnTeam::class);
     Route::delete('teams/{team}', [TeamController::class, 'destroy'])->middleware(App\Http\Middleware\TeamLeaderOwnTeam::class);
 
+    // Profile picture upload & preview
+    Route::post('users/{user}/profile-pic', [UserController::class, 'uploadProfilePic']);
+    Route::get('users/{user}/profile-pic', [UserController::class, 'previewProfilePic']);
+
+    Route::post('teams/{team}/profile-pic', [TeamController::class, 'uploadProfilePic'])->middleware(App\Http\Middleware\TeamLeaderOwnTeam::class);
+    Route::get('teams/{team}/profile-pic', [TeamController::class, 'previewProfilePic']);
+
+    // Teams import/export
+    Route::get('export/teams', [TeamController::class, 'export'])->middleware(App\Http\Middleware\AdminOnly::class);
+    Route::post('import/teams', [TeamController::class, 'import'])->middleware(App\Http\Middleware\AdminOnly::class);
+
     // Team members management
     Route::post('teams/{team}/members', [TeamController::class, 'addMember'])
         ->middleware([

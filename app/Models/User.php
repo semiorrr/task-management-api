@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -11,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -24,7 +25,10 @@ class User extends Authenticatable
         'password',
         'role',
         'team_id',
+        'profile_pic',
     ];
+
+    protected $appends = ['profile_pic_url'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -67,5 +71,14 @@ class User extends Authenticatable
     public function tasks()
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function getProfilePicUrlAttribute()
+    {
+        if (!$this->profile_pic) {
+            return url('images/default-user.png');
+        }
+
+        return url('storage/' . $this->profile_pic);
     }
 }
