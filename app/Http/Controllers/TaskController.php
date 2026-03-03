@@ -14,10 +14,12 @@ class TaskController extends Controller
         $includes = array_filter(explode(',', $request->query('include', '')));
         $query = Task::query();
 
-        
-        if ($user->role === 'team_leader') {
+        if ($user->role === 'admin') {
+            // Admin sees all tasks
+        } elseif ($user->role === 'team_leader') {
             $query->where('team_id', $user->team_id)->orWhere('user_id', $user->id);
         } else {
+            // Regular user sees only their own tasks
             $query->where('user_id', $user->id);
         }
 
